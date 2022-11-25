@@ -91,9 +91,11 @@ class LRHRDataset(Dataset):
                 img_LR = Image.open(self.lr_path[index]).convert("RGB")
         if self.need_LR:
             [img_LR, img_SR, img_HR] = Util.transform_augment(
-                [img_LR, img_SR, img_HR], split=self.split, min_max=(-1, 1))
+                [img_LR, img_SR, img_HR], split=self.split, min_max=(-1, 1),
+                image_size=self.r_res)
             return {'LR': img_LR, 'HR': img_HR, 'SR': img_SR, 'Index': index}
         else:
             [img_SR, img_HR] = Util.transform_augment(
-                [img_SR, img_HR], split=self.split, min_max=(-1, 1))
+                [img_SR, img_HR], split=self.split, min_max=(-1, 1),
+                image_size=self.r_res)
             return {'HR': img_HR, 'SR': img_SR, 'Index': index}
