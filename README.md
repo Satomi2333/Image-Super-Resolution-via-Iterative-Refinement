@@ -2,6 +2,13 @@
 
 [Paper](https://arxiv.org/pdf/2104.07636.pdf ) |  [Project](https://iterative-refinement.github.io/ )
 
+## Change(folk) log
+2022.11.25
+
+- Now can randomly crop hr_img and lr_img to the fixed size(config: datasets.*.r_resolution) at the run time, this makes it possible that you don't have to prepare your dataset images to the fixed size before the training process. (only when "HR" mode, not "HRLR" mode)
+
+- Adds the config file *config/derain_sr3_16_128.json* for deraining dataset(Derain13K)
+
 ## Brief
 
 This is an unofficial implementation of **Image Super-Resolution via Iterative Refinement(SR3)** by **Pytorch**.
