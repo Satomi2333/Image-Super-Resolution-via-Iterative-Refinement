@@ -20,6 +20,7 @@
             "datatype": "img", //lmdb or img, path of img files
             "l_resolution": 16, // low resolution need to super_resolution
             "r_resolution": 128, // high resolution
+            "random_crop": true,
             "batch_size": 16,
             "num_workers": 8,
             "use_shuffle": true,
@@ -49,7 +50,7 @@
                 8,
                 8
             ],
-            "attn_res": [
+            "attn_res": [//using attention block when opt['diffusion']['image_size'] == any(this value)
                 16
             ],
             "res_blocks": 2,

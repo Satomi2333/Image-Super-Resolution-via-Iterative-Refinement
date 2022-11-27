@@ -74,11 +74,11 @@ def transform2tensor(img, min_max=(0, 1)):
 # implementation by torchvision, detail in https://github.com/Janspiry/Image-Super-Resolution-via-Iterative-Refinement/issues/14
 totensor = torchvision.transforms.ToTensor()
 hflip = torchvision.transforms.RandomHorizontalFlip()
-def transform_augment(img_list, split='val', min_max=(0, 1), image_size=128):
+def transform_augment(img_list, split='val', min_max=(0, 1), image_size=128, random_crop=False):
     imgs = [totensor(img) for img in img_list]
     # if len(imgs) == 2 and any([i.shape()[1] != i.shape()[2] != image_size for i in imgs]):
     # in the file torchvision\transforms\transforms.py class RandomCrop, crop size checker is existed
-    if len(imgs) == 2:
+    if len(imgs) == 2 and random_crop:
         # do crop when got input [img_SR, img_HR]
         crop = RandomCropMulti(image_size)
         imgs = crop(imgs)

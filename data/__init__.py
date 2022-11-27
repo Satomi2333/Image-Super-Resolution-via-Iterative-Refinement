@@ -25,13 +25,18 @@ def create_dataset(dataset_opt, phase):
     '''create dataset'''
     mode = dataset_opt['mode']
     from data.LRHR_dataset import LRHRDataset as D
+    if ('random_crop' not in dataset_opt) or (dataset_opt['random_crop'] is None):
+        random_crop = False
+    else:
+        random_crop = dataset_opt['random_crop']
     dataset = D(dataroot=dataset_opt['dataroot'],
                 datatype=dataset_opt['datatype'],
                 l_resolution=dataset_opt['l_resolution'],
                 r_resolution=dataset_opt['r_resolution'],
                 split=phase,
                 data_len=dataset_opt['data_len'],
-                need_LR=(mode == 'LRHR')
+                need_LR=(mode == 'LRHR'),
+                random_crop=random_crop
                 )
     logger = logging.getLogger('base')
     logger.info('Dataset [{:s} - {:s}] is created.'.format(dataset.__class__.__name__,
