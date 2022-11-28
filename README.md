@@ -3,11 +3,28 @@
 [Paper](https://arxiv.org/pdf/2104.07636.pdf ) |  [Project](https://iterative-refinement.github.io/ )
 
 ## Change(folk) log
+
+2022.11.28
+
+- Add a new unet model, based on sr3 but is more similar to [Deblurring via Stochastic Refinement](https://arxiv.org/abs/2112.02475v2) (optionally removed group_norm, positional_embedding, self_attention)
+- Add a config file(config/derain_sr3_deblur_16_128.json) that is compatible with deblurring sr3
+
+2022.11.27
+
+- Randomly crops are optional now, the default value is False, leave it to none is ok(config: datasets.*.random_crop)
+
 2022.11.25
 
-- Now can randomly crop hr_img and lr_img to the fixed size(config: datasets.*.r_resolution) at the run time, this makes it possible that you don't have to prepare your dataset images to the fixed size before the training process. (only when "HR" mode, not "HRLR" mode)
+- Now can randomly crop hr_img and lr_img to the fixed size(config: datasets.*.r_resolution) at the run time, this makes it possible that you don't have to prepare your dataset images to the fixed size before the training process and train the non-square dataset (only when "HR" mode, not "HRLR" mode)
 
 - Adds the config file *config/derain_sr3_16_128.json* for deraining dataset(Derain13K)
+
+## Todo
+
+- Replace ddpm using ddim
+- prepare the dataset before training
+
+
 
 ## Brief
 

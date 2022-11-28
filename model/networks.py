@@ -86,6 +86,11 @@ def define_G(opt):
         from .ddpm_modules import diffusion, unet
     elif model_opt['which_model_G'] == 'sr3':
         from .sr3_modules import diffusion, unet
+    elif model_opt['which_model_G'] == 'sr3_deblur':
+        from .sr3_modules import diffusion
+        from .sr3_modules import unet_deblur as unet
+    if not model_opt['unet']['remove_positional_encoding']: # when this value is None or is False
+        model_opt['unet']['remove_positional_encoding'] = False
     if ('norm_groups' not in model_opt['unet']) or model_opt['unet']['norm_groups'] is None:
         model_opt['unet']['norm_groups']=32
     model = unet.UNet(
@@ -97,7 +102,8 @@ def define_G(opt):
         attn_res=model_opt['unet']['attn_res'],
         res_blocks=model_opt['unet']['res_blocks'],
         dropout=model_opt['unet']['dropout'],
-        image_size=model_opt['diffusion']['image_size']
+        image_size=model_opt['diffusion']['image_size'],
+        remove_positional_encoding=model_opt['unet']['remove_positional_encoding']
     )
     netG = diffusion.GaussianDiffusion(
         model,
