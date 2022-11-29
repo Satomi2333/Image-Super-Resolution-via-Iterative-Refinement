@@ -83,7 +83,12 @@ class GaussianDiffusion(nn.Module):
         channels=3,
         loss_type='l1',
         conditional=True,
-        schedule_opt=None
+        schedule_opt=None,
+        use_ddim=False,
+        ddim_timesteps=50,
+        ddim_discr_method="uniform",
+        ddim_eta=0.0,
+        ddim_clip_denoised=True
     ):
         super().__init__()
         self.channels = channels

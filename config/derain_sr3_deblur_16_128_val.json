@@ -1,6 +1,6 @@
 {
     "name": "derain_sr3deblur",
-    "phase": "train", // train or val
+    "phase": "val", // train or val
     "gpu_ids": [
         0
     ],
@@ -10,8 +10,8 @@
         "results": "results",
         "checkpoint": "checkpoint",
 //        "resume_state": null
-//         "resume_state": "experiments/derain_sr3deblur_221128_155659/checkpoint/I200000_E234" //pretrain model or training state
-         "resume_state": "experiments/derain_sr3deblur_221128_155659/checkpoint/I480000_E561" //pretrain model or training state
+         "resume_state": "experiments/derain_sr3deblur_221128_155659/checkpoint/I200000_E234" //pretrain model or training state
+//         "resume_state": "experiments/derain_sr3deblur_221128_155659/checkpoint/I480000_E561" //pretrain model or training state
     },
     "datasets": {
         "train": {
@@ -99,6 +99,6 @@
         }
     },
     "wandb": {
-        "project": "derain_sr3deblur"
+        "project": "derain_sr3deblur_val"
     }
 }

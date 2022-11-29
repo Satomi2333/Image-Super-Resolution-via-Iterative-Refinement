@@ -69,7 +69,12 @@ class GaussianDiffusion(nn.Module):
         channels=3,
         loss_type='l1',
         conditional=True,
-        schedule_opt=None
+        schedule_opt=None,
+        use_ddim=False,
+        ddim_timesteps=50,
+        ddim_discr_method="uniform",
+        ddim_eta=0.0,
+        ddim_clip_denoised=True
     ):
         super().__init__()
         self.channels = channels
@@ -77,6 +82,15 @@ class GaussianDiffusion(nn.Module):
         self.denoise_fn = denoise_fn
         self.loss_type = loss_type
         self.conditional = conditional
+        self.use_ddim = use_ddim
+        self.ddim_timesteps = ddim_timesteps
+        self.ddim_discr_method = ddim_discr_method
+        self.ddim_eta = ddim_eta
+        self.ddim_clip_denoised = ddim_clip_denoised
+
+        # if self.use_ddim:
+        #     from diffusers import DDIMScheduler
+
         if schedule_opt is not None:
             pass
             # self.set_new_noise_schedule(schedule_opt)
@@ -92,6 +106,13 @@ class GaussianDiffusion(nn.Module):
     def set_new_noise_schedule(self, schedule_opt, device):
         to_torch = partial(torch.tensor, dtype=torch.float32, device=device)
 
+        # if self.use_ddim:
+        #     from diffusers import DDIMScheduler
+        #     self.ddim_scheduler = DDIMScheduler(num_train_timesteps = schedule_opt['n_timestep'],
+        #                                         beta_start = schedule_opt['linear_start'],
+        #                                         beta_end = schedule_opt['linear_end'],
+        #                                         beta_schedule = schedule_opt['schedule'])
+        #     self.ddim_scheduler.set_timesteps(self.ddim_timesteps)
         betas = make_beta_schedule(
             schedule=schedule_opt['schedule'],
             n_timestep=schedule_opt['n_timestep'],
@@ -199,15 +220,133 @@ class GaussianDiffusion(nn.Module):
         else:
             return ret_img[-1]
 
+    # https://github.com/openai/improved-diffusion/blob/783b6740edb79fdb7d063250db2c51cc9545dcd1/improved_diffusion/gaussian_diffusion.py#L828
+    def _extract(self, arr, timesteps, broadcast_shape):
+        """
+        Extract values from a 1-D array for a batch of indices.
+
+        :param arr: the 1-D array.
+        :param timesteps: a tensor of indices into the array to extract.
+        :param broadcast_shape: a larger shape of K dimensions with the batch
+                                dimension equal to the length of timesteps.
+        :return: a tensor of shape [batch_size, 1, ...] where the shape has K dims.
+        """
+        res = arr.to(device=timesteps.device)[timesteps].float()
+        while len(res.shape) < len(broadcast_shape):
+            res = res[..., None]
+        return res.expand(broadcast_shape)
+
+    # ddim sampler reference:https://zhuanlan.zhihu.com/p/565698027
+    # this won't work, what a pity
+    # after my hard debug, this work as expected
+    @torch.no_grad()
+    def ddim_sample(self, x_in):
+        # make ddim timestep sequence
+        if self.conditional:
+            (batch_size, channels, width, height) = x_in.shape
+        else:
+            (batch_size, channels, width, height) = x_in
+        if self.ddim_discr_method == 'uniform':
+            c = self.num_timesteps // self.ddim_timesteps
+            ddim_timestep_seq = np.asarray(list(range(0, self.num_timesteps, c)))
+        elif self.ddim_discr_method == 'quad':
+            ddim_timestep_seq = (
+                    (np.linspace(0, np.sqrt(self.num_timesteps * .8), self.ddim_timesteps)) ** 2
+            ).astype(int)
+        else:
+            raise NotImplementedError(f'There is no ddim discretization method called "{self.ddim_discr_method}"')
+        # add one to get the final alpha values right (the ones from first scale to data during sampling)
+        ddim_timestep_seq = ddim_timestep_seq + 1
+        # previous sequence
+        ddim_timestep_prev_seq = np.append(np.array([0]), ddim_timestep_seq[:-1])
+
+        device = next(self.denoise_fn.parameters()).device
+        # start from pure noise (for each example in the batch)
+        sample_img = torch.randn((batch_size, channels, width, height), device=device)
+        for i in tqdm(reversed(range(0, self.ddim_timesteps)), desc='sampling loop time step', total=self.ddim_timesteps):
+            t = torch.full((batch_size,), ddim_timestep_seq[i], device=device, dtype=torch.long)
+            prev_t = torch.full((batch_size,), ddim_timestep_prev_seq[i], device=device, dtype=torch.long)
+
+            # 1. get current and previous alpha_cumprod
+            alpha_cumprod_t = self._extract(self.alphas_cumprod, t, sample_img.shape)
+            alpha_cumprod_t_prev = self._extract(self.alphas_cumprod, prev_t, sample_img.shape)
+
+            # 2. predict noise using model
+            noise_level = torch.FloatTensor(
+                [self.sqrt_alphas_cumprod_prev[t + 1]]).repeat(batch_size, 1).to(device)
+            if self.conditional:
+                pred_noise = self.denoise_fn(torch.cat([x_in, sample_img], dim=1), noise_level)
+            else:
+                pred_noise = self.denoise_fn(sample_img, noise_level)
+
+            # 3. get the predicted x_0
+            pred_x0 = (sample_img - torch.sqrt((1. - alpha_cumprod_t)) * pred_noise) / torch.sqrt(alpha_cumprod_t)
+            if self.ddim_clip_denoised:
+                pred_x0 = torch.clamp(pred_x0, min=-1., max=1.)
+
+            # 4. compute variance: "sigma_t(η)" -> see formula (16)
+            # σ_t = sqrt((1 − α_t−1)/(1 − α_t)) * sqrt(1 − α_t/α_t−1)
+            sigmas_t = self.ddim_eta * torch.sqrt(
+                (1 - alpha_cumprod_t_prev) / (1 - alpha_cumprod_t) * (1 - alpha_cumprod_t / alpha_cumprod_t_prev))
+
+            # 5. compute "direction pointing to x_t" of formula (12)
+            pred_dir_xt = torch.sqrt(1 - alpha_cumprod_t_prev - sigmas_t ** 2) * pred_noise
+
+            # 6. compute x_{t-1} of formula (12)
+            x_prev = torch.sqrt(alpha_cumprod_t_prev) * pred_x0 + pred_dir_xt + sigmas_t * torch.randn_like(sample_img)
+
+            sample_img = x_prev
+
+        return sample_img
+
+    @torch.no_grad()
+    def ddim_sample_loop(self,
+                         x):
+        if isinstance(x, torch.Tensor):
+            x_in = torch.randn(size=x.shape)
+            x_c = x
+            x_shape = x.shape
+        elif isinstance(x, (tuple, list)):
+            x_in = torch.randn(size=x)
+            x_shape = x
+        else:
+            raise ValueError(f"ddim received an unknown input type: {type(x)}")
+
+        batch_size, _ = x_shape
+        # reference: https://github.com/huggingface/diffusers/blob/4c54519e1a640f393ff790a72be38284d4253b45/src/diffusers/pipelines/ddim/pipeline_ddim.py#L107
+        for t in tqdm(reversed(range(0, self.ddim_timesteps)),
+                      desc='sampling loop time step',
+                      total=self.ddim_timesteps):
+            noise_level = torch.FloatTensor(
+                [self.sqrt_alphas_cumprod_prev[t + 1]]).repeat(batch_size, 1).to(x.device)
+            # 1. predict noise model_output
+            if self.conditional:
+                model_output = self.denoise_fn(torch.cat([x_in, x_c], dim=1), noise_level)
+            else:
+                model_output = self.denoise_fn(x_in, noise_level)
+
+            # 2. predict previous mean of image x_t-1 and add variance depending on eta
+            # eta corresponds to η in paper and should be between [0, 1]
+            # do x_t -> x_t-1
+            x_in = self.ddim_scheduler.step(model_output, t, x_in, self.ddim_eta).prev_sample
+
     @torch.no_grad()
     def sample(self, batch_size=1, continous=False):
         image_size = self.image_size
         channels = self.channels
-        return self.p_sample_loop((batch_size, channels, image_size, image_size), continous)
+        if self.use_ddim:
+            return self.ddim_sample((batch_size, channels, image_size, image_size))
+            # return self.ddim_sample_loop((batch_size, channels, image_size, image_size)) # use diffuser
+        else:
+            return self.p_sample_loop((batch_size, channels, image_size, image_size), continous)
 
     @torch.no_grad()
     def super_resolution(self, x_in, continous=False):
-        return self.p_sample_loop(x_in, continous)
+        if self.use_ddim:
+            return self.ddim_sample(x_in)
+            # return self.ddim_sample_loop(x_in) # use diffuser
+        else:
+            return self.p_sample_loop(x_in, continous)
 
     def q_sample(self, x_start, continuous_sqrt_alpha_cumprod, noise=None):
         noise = default(noise, lambda: torch.randn_like(x_start))

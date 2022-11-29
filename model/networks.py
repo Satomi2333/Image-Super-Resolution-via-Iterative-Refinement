@@ -93,6 +93,16 @@ def define_G(opt):
         model_opt['unet']['remove_positional_encoding'] = False
     if ('norm_groups' not in model_opt['unet']) or model_opt['unet']['norm_groups'] is None:
         model_opt['unet']['norm_groups']=32
+    if not model_opt['diffusion']['use_ddim']:  # when this value is None or is False
+        model_opt['diffusion']['use_ddim'] = False
+    if ('ddim_timesteps' not in model_opt['diffusion']) or model_opt['diffusion']['ddim_timesteps'] is None:
+        model_opt['diffusion']['ddim_timesteps']=50
+    if ('ddim_discr_method' not in model_opt['diffusion']) or model_opt['diffusion']['ddim_discr_method'] is None:
+        model_opt['diffusion']['ddim_discr_method']="uniform"
+    if ('ddim_eta' not in model_opt['diffusion']) or model_opt['diffusion']['ddim_eta'] is None:
+        model_opt['diffusion']['ddim_eta']=0.0
+    if not model_opt['diffusion']['ddim_clip_denoised']:  # when this value is None or is False
+        model_opt['diffusion']['ddim_clip_denoised'] = False
     model = unet.UNet(
         in_channel=model_opt['unet']['in_channel'],
         out_channel=model_opt['unet']['out_channel'],
@@ -111,7 +121,12 @@ def define_G(opt):
         channels=model_opt['diffusion']['channels'],
         loss_type='l1',    # L1 or L2
         conditional=model_opt['diffusion']['conditional'],
-        schedule_opt=model_opt['beta_schedule']['train']
+        schedule_opt=model_opt['beta_schedule']['train'],
+        use_ddim=model_opt['diffusion']['use_ddim'],
+        ddim_timesteps=model_opt['diffusion']['ddim_timesteps'],
+        ddim_discr_method=model_opt['diffusion']['ddim_discr_method'],
+        ddim_eta=model_opt['diffusion']['ddim_eta'],
+        ddim_clip_denoised=model_opt['diffusion']['ddim_clip_denoised']
     )
     if opt['phase'] == 'train':
         # init_weights(netG, init_type='kaiming', scale=0.1)

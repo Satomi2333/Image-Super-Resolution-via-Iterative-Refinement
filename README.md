@@ -4,25 +4,42 @@
 
 ## Change(folk) log
 
+2022.11.29
+
+- Now can skip the image if the resolution is lower than the specified value(r_resolution), only when config: datasets.*.datatype is "img"(not "lmdb").  [commit]()
+  - However, there is a potential problem that may exist. if there are too many images in the dataset has a smaller resolution than r_resolution, the data loader will take more time to search for a new image, which may cause poor performance
+
+- Add the DDIM sampler, which can be set to replace the original DDPM sampler(set config: model.diffusion.use_ddim to true), but only work when config: model.which_model_G is sr3 or sr3_deblur. [commit]()
+
+- DDIM sampler has more option in config: model.diffusion.
+
+  ```json
+    "use_ddim": true,
+    "ddim_timesteps": 50,
+    "ddim_discr_method": "uniform",// uniform or quad
+    "ddim_eta": 0.0,
+    "ddim_clip_denoised": true
+  ```
+
 2022.11.28
 
-- Add a new unet model, based on sr3 but is more similar to [Deblurring via Stochastic Refinement](https://arxiv.org/abs/2112.02475v2) (optionally removed group_norm, positional_embedding, self_attention)
-- Add a config file(config/derain_sr3_deblur_16_128.json) that is compatible with deblurring sr3
+- Add a new unet model, based on sr3 but is more similar to [Deblurring via Stochastic Refinement](https://arxiv.org/abs/2112.02475v2) (optionally removed group_norm, positional_embedding, self_attention) [commit](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/aae25d491d5a7fb4c3522b217b9d390e12b2163b)
+- Add a config file (*config/derain_sr3_deblur_16_128.json*) that is compatible with deblurring sr3 [commit](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/aae25d491d5a7fb4c3522b217b9d390e12b2163b)
 
 2022.11.27
 
-- Randomly crops are optional now, the default value is False, leave it to none is ok(config: datasets.*.random_crop)
+- Randomly crops are optional now, the default value is False, leave it to none is ok(config: datasets.*.random_crop) [commit](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/1c3664e6917e9eb20de554e85edb2200e5d5af19)
 
 2022.11.25
 
-- Now can randomly crop hr_img and lr_img to the fixed size(config: datasets.*.r_resolution) at the run time, this makes it possible that you don't have to prepare your dataset images to the fixed size before the training process and train the non-square dataset (only when "HR" mode, not "HRLR" mode)
+- Now can randomly crop hr_img and lr_img to the fixed size(config: datasets.*.r_resolution) at the run time, this makes it possible that you don't have to prepare your dataset images to the fixed size before the training process and train the non-square dataset (only when "HR" mode, not "HRLR" mode)~~(Be careful this won't work if exists any of image that has a lower resolution than r_resolution)~~ [commit](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/a89871e00bef7da11a6c22e080381b921156d370)
 
-- Adds the config file *config/derain_sr3_16_128.json* for deraining dataset(Derain13K)
+- Adds the config file *config/derain_sr3_16_128.json* for deraining dataset(Derain13K) [commit](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/bfe549ee25ab684c15e738da926a563f607fdf59)
 
 ## Todo
 
-- Replace ddpm using ddim
-- prepare the dataset before training
+- [x] Replace ddpm using ddim
+- [ ] prepare the dataset before training
 
 
 
