@@ -87,7 +87,20 @@ class LRHRDataset(Dataset):
                 if self.need_LR:
                     img_LR = Image.open(BytesIO(lr_img_bytes)).convert("RGB")
         else:
-            img_HR = Image.open(self.hr_path[index]).convert("RGB")
+            img_HR_temp = Image.open(self.hr_path[index])
+            # when using random_crop, this
+            if self.random_crop:
+                while img_HR_temp.height < self.r_res or img_HR_temp.width < self.r_res:
+                    # randomly search a new image with a larger resolution than self.r_res
+                    # otherwise, randomly crop will cause problems with inconsistent image sizes
+                    # if there are too many images in the dataset has a smaller resolution than self.r_res
+                    # this part will take more time to search for a new image, which may cause poor performance
+                    # one way to solve this potential problem is to remove the index of this image from hr_path
+                    # and also lr_path, or replace a new index instead of the old one
+                    # another way is preprocessing the dataset
+                    new_index = random.randint(0, self.data_len - 1)
+                    img_HR_temp = Image.open(self.hr_path[new_index])
+            img_HR = img_HR_temp.convert("RGB")
             img_SR = Image.open(self.sr_path[index]).convert("RGB")
             if self.need_LR:
                 img_LR = Image.open(self.lr_path[index]).convert("RGB")
