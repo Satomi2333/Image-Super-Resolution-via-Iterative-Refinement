@@ -9,7 +9,7 @@ if __name__ == "__main__":
                         default='experiments/basic_sr_ffhq_210809_142238/results')
     args = parser.parse_args()
     real_names = list(glob.glob('{}/*_hr.png'.format(args.path)))
-    fake_names = list(glob.glob('{}/*_sr.png'.format(args.path)))
+    fake_names = list(glob.glob('{}/*_lr.png'.format(args.path)))
 
     real_names.sort()
     fake_names.sort()
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     for rname, fname in zip(real_names, fake_names):
         idx += 1
         ridx = rname.rsplit("_hr")[0]
-        fidx = rname.rsplit("_sr")[0]
+        fidx = fname.rsplit("_lr")[0]
         assert ridx == fidx, 'Image ridx:{ridx}!=fidx:{fidx}'.format(
             ridx, fidx)
 
