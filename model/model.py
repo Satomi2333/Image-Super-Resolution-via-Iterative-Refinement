@@ -57,7 +57,7 @@ class DDPM(BaseModel):
         # set log
         self.log_dict['l_pix'] = l_pix.item()
 
-    def test(self, continous=False):
+    def test(self, continous=False, use_ddpm_when_ddim_failed=False, threshold_psnr=15):
         self.netG.eval()
         with torch.no_grad():
             if isinstance(self.netG, nn.DataParallel):
@@ -66,6 +66,23 @@ class DDPM(BaseModel):
             else:
                 self.SR = self.netG.super_resolution(
                     self.data['SR'], continous)
+        if use_ddpm_when_ddim_failed:
+            visuals = self.get_current_visuals()
+            hr_img = Metrics.tensor2img(visuals['HR'])  # uint8
+            psnr = Metrics.calculate_psnr(Metrics.tensor2img(visuals['SR'][-1]), hr_img)
+            if psnr < threshold_psnr:
+                imshow(hr_img)
+                print("ddim may failed, psnr: ", psnr)
+                if isinstance(self.netG, nn.DataParallel):
+                    self.netG.module.use_ddim = False
+                    self.SR = self.netG.module.super_resolution(
+                        self.data['SR'], continous)
+                    self.netG.module.use_ddim = True
+                else:
+                    self.netG.use_ddim = False
+                    self.SR = self.netG.super_resolution(
+                        self.data['SR'], continous)
+                    self.netG.use_ddim = True
         self.netG.train()
 
     def sample(self, batch_size=1, continous=False):
