@@ -1,5 +1,5 @@
 {
-    "name": "derain_sr3deblur",
+    "name": "derain_sr3deblur_val",
     "phase": "val", // train or val
     "gpu_ids": [
         0

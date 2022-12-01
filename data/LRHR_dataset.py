@@ -88,6 +88,7 @@ class LRHRDataset(Dataset):
                     img_LR = Image.open(BytesIO(lr_img_bytes)).convert("RGB")
         else:
             img_HR_temp = Image.open(self.hr_path[index])
+            new_index = index
             # when using random_crop, this
             if self.random_crop:
                 while img_HR_temp.height < self.r_res or img_HR_temp.width < self.r_res:
@@ -101,9 +102,9 @@ class LRHRDataset(Dataset):
                     new_index = random.randint(0, self.data_len - 1)
                     img_HR_temp = Image.open(self.hr_path[new_index])
             img_HR = img_HR_temp.convert("RGB")
-            img_SR = Image.open(self.sr_path[index]).convert("RGB")
+            img_SR = Image.open(self.sr_path[new_index]).convert("RGB")
             if self.need_LR:
-                img_LR = Image.open(self.lr_path[index]).convert("RGB")
+                img_LR = Image.open(self.lr_path[new_index]).convert("RGB")
         if self.need_LR:
             [img_LR, img_SR, img_HR] = Util.transform_augment(
                 [img_LR, img_SR, img_HR], split=self.split, min_max=(-1, 1),
