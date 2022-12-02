@@ -4,14 +4,35 @@
 
 ## Change(folk) log
 
+2022.12.2
+
+- Replace the DDIM sampler code written before ([commit 11.29](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/47b2e579e077450ce966396a31f153eedce35434)), in some circumstances, using this sampler may generate a broken picture (like pure dark, colorful lines, heavy noise, partial mosaic). The version used now are referenced from the diffuser library ([this file]( https://github.com/huggingface/diffusers/blob/4c54519e1a640f393ff790a72be38284d4253b45/src/diffusers/pipelines/ddim/pipeline_ddim.py#L107))
+  - But there is still a problem(?) that exists, the more steps the DDIM sampler goes, the quality of the image might be worse. Seems like 3 or 4 steps are enough. Use the config: diffusion.ddim_scale to control this step (actual step = ddim_step * ddim_scale)
+
+2022.12.1
+
+- Can use ddpm when ddim failed. [commit](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/6060d8a94d46277727803b2d388c952f258f64f0)
+  - diffusion.test(continous=True,  **use_ddpm_when_ddim_failed=True, threshold_psnr=20**)
+- Fixed the bug in the data loading phase. [commit](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/7feb0950e44b3fa184c3e7543f178d42ddd6b26a)
+
+2022.11.30
+
+- Fixed the bug in eval.py [commit](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/80ee8c1c464f62ae07c66cf04f1a17403e68391b)
+
+- Now can evaluate multiple checkpoints using one script, usage: [commit](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/74d369f1742b2afe25a2e65a527517f2624cd6e2)
+
+  ```shell
+  python eval_multi_models.py -c config/derain_sr3_deblur_16_128_val.json -d experiments/derain_sr3deblur_221128_155659 [-enable_wandb [-log_eval]]
+  ```
+
 2022.11.29
 
-- Now can skip the image if the resolution is lower than the specified value(r_resolution), only when config: datasets.*.datatype is "img"(not "lmdb").  [commit]()
+- Now can skip the image if the resolution is lower than the specified value(r_resolution), only when config: datasets.*.datatype is "img"(not "lmdb").  [commit](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/6134af5062fc84baf88612d96d3f038d04592221)
   - However, there is a potential problem that may exist. if there are too many images in the dataset has a smaller resolution than r_resolution, the data loader will take more time to search for a new image, which may cause poor performance
 
-- Add the DDIM sampler, which can be set to replace the original DDPM sampler(set config: model.diffusion.use_ddim to true), but only work when config: model.which_model_G is sr3 or sr3_deblur. [commit]()
+- Add the DDIM sampler, which can be set to replace the original DDPM sampler(set config: model.diffusion.use_ddim to true), but only work when config: model.which_model_G is sr3 or sr3_deblur. [commit](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/47b2e579e077450ce966396a31f153eedce35434)
 
-- DDIM sampler has more option in config: model.diffusion.
+- DDIM sampler has more options in config: model.diffusion.
 
   ```json
     "use_ddim": true,
@@ -40,6 +61,7 @@
 
 - [x] Replace ddpm using ddim
 - [ ] prepare the dataset before training
+- [ ] EMA
 
 
 

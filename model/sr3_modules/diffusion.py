@@ -74,7 +74,8 @@ class GaussianDiffusion(nn.Module):
         ddim_timesteps=50,
         ddim_discr_method="uniform",
         ddim_eta=0.0,
-        ddim_clip_denoised=True
+        ddim_clip_denoised=True,
+        ddim_scale = 0.08
     ):
         super().__init__()
         self.channels = channels
@@ -87,6 +88,7 @@ class GaussianDiffusion(nn.Module):
         self.ddim_discr_method = ddim_discr_method
         self.ddim_eta = ddim_eta
         self.ddim_clip_denoised = ddim_clip_denoised
+        self.ddim_scale = ddim_scale
 
         # if self.use_ddim:
         #     from diffusers import DDIMScheduler
@@ -106,13 +108,13 @@ class GaussianDiffusion(nn.Module):
     def set_new_noise_schedule(self, schedule_opt, device):
         to_torch = partial(torch.tensor, dtype=torch.float32, device=device)
 
-        # if self.use_ddim:
-        #     from diffusers import DDIMScheduler
-        #     self.ddim_scheduler = DDIMScheduler(num_train_timesteps = schedule_opt['n_timestep'],
-        #                                         beta_start = schedule_opt['linear_start'],
-        #                                         beta_end = schedule_opt['linear_end'],
-        #                                         beta_schedule = schedule_opt['schedule'])
-        #     self.ddim_scheduler.set_timesteps(self.ddim_timesteps)
+        if self.use_ddim:
+            from diffusers import DDIMScheduler
+            self.ddim_scheduler = DDIMScheduler(num_train_timesteps = schedule_opt['n_timestep'],
+                                                beta_start = schedule_opt['linear_start'],
+                                                beta_end = schedule_opt['linear_end'],
+                                                beta_schedule = schedule_opt['schedule'])
+            self.ddim_scheduler.set_timesteps(self.ddim_timesteps)
         betas = make_beta_schedule(
             schedule=schedule_opt['schedule'],
             n_timestep=schedule_opt['n_timestep'],
@@ -302,23 +304,27 @@ class GaussianDiffusion(nn.Module):
     @torch.no_grad()
     def ddim_sample_loop(self,
                          x):
+        device = next(self.denoise_fn.parameters()).device
         if isinstance(x, torch.Tensor):
-            x_in = torch.randn(size=x.shape)
+            x_in = torch.randn(size=x.shape, device=device)
             x_c = x
             x_shape = x.shape
         elif isinstance(x, (tuple, list)):
-            x_in = torch.randn(size=x)
+            x_in = torch.randn(size=x, device=device)
             x_shape = x
         else:
             raise ValueError(f"ddim received an unknown input type: {type(x)}")
 
-        batch_size, _ = x_shape
+        batch_size = x_shape[0]
+        count = 0
         # reference: https://github.com/huggingface/diffusers/blob/4c54519e1a640f393ff790a72be38284d4253b45/src/diffusers/pipelines/ddim/pipeline_ddim.py#L107
-        for t in tqdm(reversed(range(0, self.ddim_timesteps)),
-                      desc='sampling loop time step',
-                      total=self.ddim_timesteps):
-            noise_level = torch.FloatTensor(
-                [self.sqrt_alphas_cumprod_prev[t + 1]]).repeat(batch_size, 1).to(x.device)
+        for t in tqdm(self.ddim_scheduler.timesteps,
+                      desc='sampling loop time step'):
+            prev_timestep = t - self.num_timesteps // self.ddim_timesteps
+            sqrt_alphas_cumprod_prev = torch.sqrt(
+                self.ddim_scheduler.alphas_cumprod[prev_timestep]) if prev_timestep >= 0 else torch.sqrt(
+                self.ddim_scheduler.final_alpha_cumprod)
+            noise_level = torch.FloatTensor([sqrt_alphas_cumprod_prev]).repeat(batch_size, 1).to(x.device)
             # 1. predict noise model_output
             if self.conditional:
                 model_output = self.denoise_fn(torch.cat([x_in, x_c], dim=1), noise_level)
@@ -329,22 +335,34 @@ class GaussianDiffusion(nn.Module):
             # eta corresponds to η in paper and should be between [0, 1]
             # do x_t -> x_t-1
             x_in = self.ddim_scheduler.step(model_output, t, x_in, self.ddim_eta).prev_sample
+            # plt.imshow(metrics.tensor2img(x_in.detach().float().cpu()))
+            # plt.show()
+            # print(metrics.calculate_psnr(metrics.tensor2img(x_in.detach().float().cpu()),
+            #                              metrics.tensor2img(x_gt.detach().float().cpu())))
+            count += 1
+            if count >= self.ddim_timesteps * self.ddim_scale:
+                break
+        return x_in
 
     @torch.no_grad()
     def sample(self, batch_size=1, continous=False):
         image_size = self.image_size
         channels = self.channels
         if self.use_ddim:
-            return self.ddim_sample((batch_size, channels, image_size, image_size))
-            # return self.ddim_sample_loop((batch_size, channels, image_size, image_size)) # use diffuser
+            # return self.ddim_sample((batch_size, channels, image_size, image_size))
+            return self.ddim_sample_loop((batch_size, channels, image_size, image_size)) # use diffuser
         else:
             return self.p_sample_loop((batch_size, channels, image_size, image_size), continous)
 
     @torch.no_grad()
     def super_resolution(self, x_in, continous=False):
         if self.use_ddim:
-            return self.ddim_sample(x_in)
-            # return self.ddim_sample_loop(x_in) # use diffuser
+            # from matplotlib import pyplot as plt
+            # import core.metrics as metrics
+            # plt.imshow(metrics.tensor2img(sample_img.detach().float().cpu()))
+            # plt.show()
+            # return self.ddim_sample(x_in)
+            return self.ddim_sample_loop(x_in) # use diffuser version
         else:
             return self.p_sample_loop(x_in, continous)
 

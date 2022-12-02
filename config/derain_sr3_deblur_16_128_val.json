@@ -80,7 +80,8 @@
             "ddim_timesteps": 50,
             "ddim_discr_method": "uniform",// uniform or quad
             "ddim_eta": 0.0,
-            "ddim_clip_denoised": true
+            "ddim_clip_denoised": true,
+            "ddim_scale": 0.08
         }
     },
     "train": {
