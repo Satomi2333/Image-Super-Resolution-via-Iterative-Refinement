@@ -85,7 +85,7 @@ if __name__ == "__main__":
                 if current_step > n_iter:
                     break
                 diffusion.feed_data(train_data)
-                diffusion.optimize_parameters()
+                diffusion.optimize_parameters(steps=current_step*opt['train']['batch_size'])
                 # log
                 if current_step % opt['train']['print_freq'] == 0:
                     logs = diffusion.get_current_log()

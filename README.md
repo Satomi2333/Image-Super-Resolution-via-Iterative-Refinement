@@ -4,7 +4,11 @@
 
 ## Change(folk) log
 
-2022.12.2
+2022.12.3
+
+- Add the EMA
+
+2022.12.2 [commit](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/ff13cfe6685a687d8da4f66b9459b08359b5f1cb)
 
 - Replace the DDIM sampler code written before ([commit 11.29](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/47b2e579e077450ce966396a31f153eedce35434)), in some circumstances, using this sampler may generate a broken picture (like pure dark, colorful lines, heavy noise, partial mosaic). The version used now are referenced from the diffuser library ([this file]( https://github.com/huggingface/diffusers/blob/4c54519e1a640f393ff790a72be38284d4253b45/src/diffusers/pipelines/ddim/pipeline_ddim.py#L107))
   - But there is still a problem(?) that exists, the more steps the DDIM sampler goes, the quality of the image might be worse. Seems like 3 or 4 steps are enough. Use the config: diffusion.ddim_scale to control this step (actual step = ddim_step * ddim_scale)
@@ -61,7 +65,8 @@
 
 - [x] Replace ddpm using ddim
 - [ ] prepare the dataset before training
-- [ ] EMA
+- [x] EMA
+- [ ] More metrics like FID...
 
 
 
