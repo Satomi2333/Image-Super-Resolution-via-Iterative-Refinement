@@ -2,7 +2,10 @@ import os
 import math
 import numpy as np
 import cv2
+import torch
+from torchvision.models import inception_v3
 from torchvision.utils import make_grid
+import lpips
 
 
 def tensor2img(tensor, out_type=np.uint8, min_max=(-1, 1)):
@@ -91,3 +94,38 @@ def calculate_ssim(img1, img2):
             return ssim(np.squeeze(img1), np.squeeze(img2))
     else:
         raise ValueError('Wrong input image dimensions.')
+
+lpips_fn = None
+
+
+def _lpips(img1, img2):
+    global lpips_fn
+    return lpips_fn.forward(img1.cuda(), img2.cuda()).squeeze().item()
+
+
+def calculate_lpips(img1, img2, net="alex"):
+    # Variables im1, im2 is a PyTorch Tensor/Variable
+    # with shape Nx3xHxW (N patches of size HxW, RGB images scaled in `[-1,+1]`).
+    if not isinstance(img1, type(img2)):
+        raise ValueError('Input images are not the same type.')
+    if isinstance(img1, torch.Tensor):
+        if not img1.shape == img2.shape:
+            raise ValueError('Input images must have the same dimensions.')
+    elif isinstance(img1, np.ndarray):
+        img1 = torch.from_numpy(img1)
+        img2 = torch.from_numpy(img2)
+    elif isinstance(img1, str):
+        assert os.path.exists(img1), f"cant find img file: {img1}"
+        img1 = lpips.im2tensor(lpips.load_image(img1))
+        img2 = lpips.im2tensor(lpips.load_image(img2))
+    global lpips_fn
+    lpips_fn = lpips.LPIPS(net="alex").cuda()
+    if net != "alex" and net in ('alex', 'vgg'):
+        lpips_fn = lpips.LPIPS(net=net)
+    return _lpips(img1, img2)
+
+
+def calculate_mutil_img(img1, img2, img3, metrics):
+    # calculate the metrics between (img1, img2) and (img1, img3)
+    return metrics(img1, img2), metrics(img1, img3)
+
