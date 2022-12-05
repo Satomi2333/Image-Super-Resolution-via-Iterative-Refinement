@@ -75,7 +75,8 @@ class GaussianDiffusion(nn.Module):
         ddim_discr_method="uniform",
         ddim_eta=0.0,
         ddim_clip_denoised=True,
-        ddim_scale = 0.08
+        ddim_scale = 0.08,
+        learning_residual = False
     ):
         super().__init__()
         self.channels = channels
@@ -89,6 +90,7 @@ class GaussianDiffusion(nn.Module):
         self.ddim_eta = ddim_eta
         self.ddim_clip_denoised = ddim_clip_denoised
         self.ddim_scale = ddim_scale
+        self.learning_residual = learning_residual
 
         # if self.use_ddim:
         #     from diffusers import DDIMScheduler
@@ -376,7 +378,10 @@ class GaussianDiffusion(nn.Module):
         )
 
     def p_losses(self, x_in, noise=None):
-        x_start = x_in['HR']
+        if self.learning_residual:
+            x_start = x_in['HR'] - x_in['SR'] # gt - cond
+        else:
+            x_start = x_in['HR']
         [b, c, h, w] = x_start.shape
         t = np.random.randint(1, self.num_timesteps + 1)
         continuous_sqrt_alpha_cumprod = torch.FloatTensor(

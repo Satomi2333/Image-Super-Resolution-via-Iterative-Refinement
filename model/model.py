@@ -161,9 +161,10 @@ class DDPM(BaseModel):
         if sample:
             out_dict['SAM'] = self.SR.detach().float().cpu()
         else:
-            out_dict['SR'] = self.SR.detach().float().cpu()
+            out_dict['SR'] = (self.SR + self.data['SR'] if self.netG.learning_residual else self.SR).detach().float().cpu()
             out_dict['INF'] = self.data['SR'].detach().float().cpu()
             out_dict['HR'] = self.data['HR'].detach().float().cpu()
+            out_dict['Res'] = self.SR.detach().float().cpu() if self.netG.learning_residual else None
             if need_LR and 'LR' in self.data:
                 out_dict['LR'] = self.data['LR'].detach().float().cpu()
             else:

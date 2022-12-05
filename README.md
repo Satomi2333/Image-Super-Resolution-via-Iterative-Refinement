@@ -4,9 +4,18 @@
 
 ## Change(folk) log
 
+2022.12.5
+
+- The network now can be set to learn the residual (input-gt) [commint]()
+  - set the config: model.diffusion.learning_residual to true to enable this
+
+2022.12.4
+
+- Can calculate LPIPS using eval.py [commint](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/302138fa49c909db14d4aa7b274576fbef7d0854)
+
 2022.12.3
 
-- Add the EMA
+- Add the EMA [commint](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/c00150d9741db15f466309b1080979bfcc400f7d)
 
 2022.12.2 [commit](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/ff13cfe6685a687d8da4f66b9459b08359b5f1cb)
 

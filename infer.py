@@ -72,6 +72,7 @@ if __name__ == "__main__":
 
         hr_img = Metrics.tensor2img(visuals['HR'])  # uint8
         fake_img = Metrics.tensor2img(visuals['INF'])  # uint8
+        if visuals['Res']: res_img = Metrics.tensor2img(visuals['Res'])
 
         sr_img_mode = 'grid'
         if sr_img_mode == 'single':
@@ -93,6 +94,9 @@ if __name__ == "__main__":
             hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
         Metrics.save_img(
             fake_img, '{}/{}_{}_inf.png'.format(result_path, current_step, idx))
+        if visuals['Res']:
+            Metrics.save_img(
+                res_img, '{}/{}_{}_res.png'.format(result_path, current_step, idx))
 
         if wandb_logger and opt['log_infer']:
             wandb_logger.log_eval_data(fake_img, Metrics.tensor2img(visuals['SR'][-1]), hr_img)

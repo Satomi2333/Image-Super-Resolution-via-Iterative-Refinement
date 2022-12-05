@@ -104,7 +104,9 @@ def define_G(opt):
     if not model_opt['diffusion']['ddim_clip_denoised']:  # when this value is None or is False
         model_opt['diffusion']['ddim_clip_denoised'] = False
     if ('ddim_scale' not in model_opt['diffusion']) or model_opt['diffusion']['ddim_scale'] is None:
-        model_opt['diffusion']['ddim_eta']=0.08
+        model_opt['diffusion']['ddim_scale']=1.0
+    if not model_opt['diffusion']['learning_residual']:  # when this value is None or is False
+        model_opt['diffusion']['learning_residual'] = False
     model = unet.UNet(
         in_channel=model_opt['unet']['in_channel'],
         out_channel=model_opt['unet']['out_channel'],
@@ -129,7 +131,8 @@ def define_G(opt):
         ddim_discr_method=model_opt['diffusion']['ddim_discr_method'],
         ddim_eta=model_opt['diffusion']['ddim_eta'],
         ddim_clip_denoised=model_opt['diffusion']['ddim_clip_denoised'],
-        ddim_scale=model_opt['diffusion']['ddim_scale']
+        ddim_scale=model_opt['diffusion']['ddim_scale'],
+        learning_residual=model_opt['diffusion']['learning_residual'],
     )
     if opt['phase'] == 'train':
         # init_weights(netG, init_type='kaiming', scale=0.1)
