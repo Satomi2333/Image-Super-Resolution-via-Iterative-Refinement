@@ -108,20 +108,19 @@ def calculate_lpips(img1, img2, net="alex"):
     # with shape Nx3xHxW (N patches of size HxW, RGB images scaled in `[-1,+1]`).
     if not isinstance(img1, type(img2)):
         raise ValueError('Input images are not the same type.')
+    if isinstance(img1, np.ndarray):
+        img1 = torch.from_numpy(img1)
+        img2 = torch.from_numpy(img2)
     if isinstance(img1, torch.Tensor):
         if not img1.shape == img2.shape:
             raise ValueError('Input images must have the same dimensions.')
-    elif isinstance(img1, np.ndarray):
-        img1 = torch.from_numpy(img1)
-        img2 = torch.from_numpy(img2)
-    elif isinstance(img1, str):
+    if isinstance(img1, str):
         assert os.path.exists(img1), f"cant find img file: {img1}"
         img1 = lpips.im2tensor(lpips.load_image(img1))
         img2 = lpips.im2tensor(lpips.load_image(img2))
     global lpips_fn
-    lpips_fn = lpips.LPIPS(net="alex").cuda()
-    if net != "alex" and net in ('alex', 'vgg'):
-        lpips_fn = lpips.LPIPS(net=net)
+    if lpips_fn is None:
+        lpips_fn = lpips.LPIPS(net=net).cuda()
     return _lpips(img1, img2)
 
 

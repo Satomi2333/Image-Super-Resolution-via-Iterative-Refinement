@@ -115,7 +115,8 @@ class GaussianDiffusion(nn.Module):
             self.ddim_scheduler = DDIMScheduler(num_train_timesteps = schedule_opt['n_timestep'],
                                                 beta_start = schedule_opt['linear_start'],
                                                 beta_end = schedule_opt['linear_end'],
-                                                beta_schedule = schedule_opt['schedule'])
+                                                beta_schedule = schedule_opt['schedule'],
+                                                clip_sample=self.ddim_clip_denoised)
             self.ddim_scheduler.set_timesteps(self.ddim_timesteps)
         betas = make_beta_schedule(
             schedule=schedule_opt['schedule'],
@@ -260,7 +261,7 @@ class GaussianDiffusion(nn.Module):
         else:
             raise NotImplementedError(f'There is no ddim discretization method called "{self.ddim_discr_method}"')
         # add one to get the final alpha values right (the ones from first scale to data during sampling)
-        ddim_timestep_seq = ddim_timestep_seq + 1
+        ddim_timestep_seq = ddim_timestep_seq + self.num_timesteps // self.ddim_timesteps - 1
         # previous sequence
         ddim_timestep_prev_seq = np.append(np.array([0]), ddim_timestep_seq[:-1])
 

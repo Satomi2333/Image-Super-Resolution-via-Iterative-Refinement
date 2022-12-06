@@ -106,18 +106,31 @@ class DDPM(BaseModel):
             hr_img = Metrics.tensor2img(visuals['HR'])  # uint8
             psnr = Metrics.calculate_psnr(Metrics.tensor2img(visuals['SR'][-1]), hr_img)
             if psnr < threshold_psnr:
-                imshow(hr_img)
+                plt.imshow(hr_img)
+                plt.show()
                 print("ddim may failed, psnr: ", psnr)
-                if isinstance(self.netG, nn.DataParallel):
-                    self.netG.module.use_ddim = False
-                    self.SR = self.netG.module.super_resolution(
-                        self.data['SR'], continous)
-                    self.netG.module.use_ddim = True
+                if self.ema_scheduler:
+                    if isinstance(self.netG_EMA, nn.DataParallel):
+                        self.netG_EMA.module.use_ddim = False
+                        self.SR = self.netG_EMA.module.super_resolution(
+                            self.data['SR'], continous)
+                        self.netG_EMA.module.use_ddim = True
+                    else:
+                        self.netG_EMA.use_ddim = False
+                        self.SR = self.netG_EMA.super_resolution(
+                            self.data['SR'], continous)
+                        self.netG_EMA.use_ddim = True
                 else:
-                    self.netG.use_ddim = False
-                    self.SR = self.netG.super_resolution(
-                        self.data['SR'], continous)
-                    self.netG.use_ddim = True
+                    if isinstance(self.netG, nn.DataParallel):
+                        self.netG.module.use_ddim = False
+                        self.SR = self.netG.module.super_resolution(
+                            self.data['SR'], continous)
+                        self.netG.module.use_ddim = True
+                    else:
+                        self.netG.use_ddim = False
+                        self.SR = self.netG.super_resolution(
+                            self.data['SR'], continous)
+                        self.netG.use_ddim = True
         self.netG.train()
         if self.ema_scheduler: self.netG_EMA.train() # perhaps not necessary
 

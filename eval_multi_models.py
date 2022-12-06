@@ -99,6 +99,7 @@ if __name__ == "__main__":
             hr_img = Metrics.tensor2img(visuals['HR'])  # uint8
             lr_img = Metrics.tensor2img(visuals['LR'])  # uint8
             fake_img = Metrics.tensor2img(visuals['INF'])  # uint8
+            if visuals['Res']: res_img = Metrics.tensor2img(visuals['Res'])
 
             Metrics.save_img(
                 sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
@@ -108,6 +109,9 @@ if __name__ == "__main__":
                 lr_img, '{}/{}_{}_lr.png'.format(result_path, current_step, idx))
             # Metrics.save_img(
             #     fake_img, '{}/{}_{}_inf.png'.format(result_path, current_step, idx))
+            if visuals['Res']:
+                Metrics.save_img(
+                    res_img, '{}/{}_{}_res.png'.format(result_path, current_step, idx))
 
             # generation
             eval_psnr = Metrics.calculate_psnr(Metrics.tensor2img(visuals['SR'][-1]), hr_img)
