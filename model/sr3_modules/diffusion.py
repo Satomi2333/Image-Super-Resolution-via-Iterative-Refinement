@@ -380,7 +380,8 @@ class GaussianDiffusion(nn.Module):
 
     def p_losses(self, x_in, noise=None):
         if self.learning_residual:
-            x_start = x_in['HR'] - x_in['SR'] # gt - cond
+            # x_start = x_in['SR'] - x_in['HR'] # gt - cond
+            x_start = x_in['HR'] # pre-processed in Dataloader
         else:
             x_start = x_in['HR']
         [b, c, h, w] = x_start.shape

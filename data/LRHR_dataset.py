@@ -8,7 +8,7 @@ import data.util as Util
 
 class LRHRDataset(Dataset):
     def __init__(self, dataroot, datatype, l_resolution=16, r_resolution=128, split='train', data_len=-1, need_LR=False,
-                 random_crop=False):
+                 random_crop=False, learning_residual=False):
         self.datatype = datatype
         self.l_res = l_resolution
         self.r_res = r_resolution
@@ -16,6 +16,7 @@ class LRHRDataset(Dataset):
         self.need_LR = need_LR
         self.split = split
         self.random_crop = random_crop
+        self.learning_residual = learning_residual
 
         if datatype == 'lmdb':
             self.env = lmdb.open(dataroot, readonly=True, lock=False,
@@ -109,9 +110,13 @@ class LRHRDataset(Dataset):
             [img_LR, img_SR, img_HR] = Util.transform_augment(
                 [img_LR, img_SR, img_HR], split=self.split, min_max=(-1, 1),
                 image_size=self.r_res, random_crop=self.random_crop)
+            if self.learning_residual:
+                img_HR = (img_SR - img_HR)/2
             return {'LR': img_LR, 'HR': img_HR, 'SR': img_SR, 'Index': index}
         else:
             [img_SR, img_HR] = Util.transform_augment(
                 [img_SR, img_HR], split=self.split, min_max=(-1, 1),
                 image_size=self.r_res, random_crop=self.random_crop)
+            if self.learning_residual:
+                img_HR = (img_SR - img_HR)/2
             return {'HR': img_HR, 'SR': img_SR, 'Index': index}

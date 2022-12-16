@@ -26,7 +26,9 @@ def create_dataset(dataset_opt, phase):
     mode = dataset_opt['mode']
     from data.LRHR_dataset import LRHRDataset as D
     if ('random_crop' not in dataset_opt) or (dataset_opt['random_crop'] is None):
-        random_crop = False
+        dataset_opt['random_crop'] = False
+    if ('learning_residual' not in dataset_opt) or (dataset_opt['learning_residual'] is None):
+        dataset_opt['learning_residual'] = False
     else:
         random_crop = dataset_opt['random_crop']
     dataset = D(dataroot=dataset_opt['dataroot'],
@@ -36,7 +38,8 @@ def create_dataset(dataset_opt, phase):
                 split=phase,
                 data_len=dataset_opt['data_len'],
                 need_LR=(mode == 'LRHR'),
-                random_crop=random_crop
+                random_crop=dataset_opt['random_crop'],
+                learning_residual=dataset_opt['learning_residual']
                 )
     logger = logging.getLogger('base')
     logger.info('Dataset [{:s} - {:s}] is created.'.format(dataset.__class__.__name__,

@@ -163,8 +163,10 @@ class DDPM(BaseModel):
             if isinstance(self.netG, nn.DataParallel):
                 self.netG.module.set_new_noise_schedule(
                     schedule_opt, self.device)
+                if self.ema_scheduler:self.netG_EMA.module.set_new_noise_schedule(schedule_opt, self.device)
             else:
                 self.netG.set_new_noise_schedule(schedule_opt, self.device)
+                if self.ema_scheduler:self.netG_EMA.set_new_noise_schedule(schedule_opt, self.device)
 
     def get_current_log(self):
         return self.log_dict
@@ -174,9 +176,10 @@ class DDPM(BaseModel):
         if sample:
             out_dict['SAM'] = self.SR.detach().float().cpu()
         else:
-            out_dict['SR'] = (self.SR + self.data['SR'] if self.netG.learning_residual else self.SR).detach().float().cpu()
+            # res belongs to [-1,1], subed by sr-hr from training set, sr and hr are both belongs to [0,1]
+            out_dict['SR'] = (((self.SR + self.data['SR']/2+0.5)*2-1) if self.netG.learning_residual else self.SR).detach().float().cpu()
             out_dict['INF'] = self.data['SR'].detach().float().cpu()
-            out_dict['HR'] = self.data['HR'].detach().float().cpu()
+            out_dict['HR'] = (((self.data['HR'] + self.data['SR']/2+0.5)*2-1) if self.netG.learning_residual else self.data['HR']).detach().float().cpu()
             out_dict['Res'] = self.SR.detach().float().cpu() if self.netG.learning_residual else None
             if need_LR and 'LR' in self.data:
                 out_dict['LR'] = self.data['LR'].detach().float().cpu()

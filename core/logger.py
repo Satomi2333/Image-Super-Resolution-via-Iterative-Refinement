@@ -74,6 +74,11 @@ def parse(args):
         # opt['datasets']['val']['data_len'] = 3
         pass
 
+    # set the dataset to learning residual if need
+    if opt['model']['diffusion'].get('learning_residual'):
+        opt['datasets']['train']['learning_residual'] = True
+        opt['datasets']['val']['learning_residual'] = True
+
     # W&B Logging
     try:
         log_wandb_ckpt = args.log_wandb_ckpt

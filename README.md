@@ -4,10 +4,29 @@
 
 ## Change(folk) log
 
+2022.12.16 [commit]()
+
+- fix the bugs when using learning_residual and ema
+
+2022.12.14 [commit](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/c90b18e2e858bc9f8db85e1329a0ec8d3a715270)
+
+- A class *Metric* for easily and efficiently calculating the metrics like psnr, ssim, lpips, and more(developing)
+  - easy: `psnr = PSNR(),psnr(img1,img2)`
+  - efficient: using a dictionary and database to save the value calculated before(especially useful for the metrics like fid, saving the features extracted from the network), and also support the batch>1(if your photos can be concatenated)
+- A data loader class for fastly reading the mutil images(3 or 2), using glob library to handle the input path like *imges/\*_sr.png*
+
+2022.12.10
+
+- CET-6
+
+2022.12.6
+
+- fix bugs [commint](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/9e43e1f1a175544d90edbeabe4610884e5654143)
+
 2022.12.5
 
-- The network now can be set to learn the residual (input-gt) [commint]()
-  - set the config: model.diffusion.learning_residual to true to enable this
+- The network now can be set to learn the residual (input-gt) [commint](https://github.com/Satomi2333/Image-Super-Resolution-via-Iterative-Refinement/commit/610c749e657fba3177b41cea63574885ce24db09)
+  - set the config: model.diffusion.learning_residual to true to enable this feature
 
 2022.12.4
 
