@@ -4,6 +4,40 @@
 
 ## Change(folk) log
 
+2023.1.5
+
+- Add a script for grid search purposes.
+
+  - Usage:
+    ```shell
+    python eval_multi_hyper_parameters.py -c config/sr_sr3_16_128.json -d experiments/.../checkpoint/I1200000_E2647 -enable_wandb
+    ```
+
+    highly recommend enabling wandb. 
+  
+  - Customize your hyper-parameters. 
+  
+    - In the file *eval_multi_hyper_parameters.py* line 50.
+  
+    - define the function and values, combine them using a list, then use *make_product()* to produce a combination of hyper-parameters.
+  
+    ```python
+    to_search1 = [10, 20, 30, 50, 100, 200, 300, 500]
+    to_search2 = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5]
+    def parameter_path1(opt, value): opt['model']['beta_schedule']['val']['n_timestep'] = value
+    def parameter_path2(opt, value): opt['model']['beta_schedule']['val']['linear_end'] = value
+    gird_search_list = [(parameter_path1, to_search1), (parameter_path2, to_search2)]
+    product = make_product(gird_search_list)
+    ```
+  
+  - Notice
+    - If you enabled the wandb, it's better to run this in a **new project**. Setting in the config file: wandb: project: "proj_name"
+    - Make sure you are using the right config file for your checkpoint, or your model will not be loaded properly.
+
+2022.12.23
+
+- 咩~
+
 2022.12.16 [commit]()
 
 - fix the bugs when using learning_residual and ema

@@ -4,7 +4,7 @@ class WandbLogger:
     """
     Log using `Weights and Biases`.
     """
-    def __init__(self, opt):
+    def __init__(self, opt, reinit=False):
         try:
             import wandb
         except ImportError:
@@ -20,7 +20,8 @@ class WandbLogger:
             self._wandb.init(
                 project=opt['wandb']['project'],
                 config=opt,
-                dir='./experiments'
+                dir='./experiments',
+                reinit=reinit
             )
 
         self.config = self._wandb.config
@@ -114,3 +115,6 @@ class WandbLogger:
             self._wandb.log({'eval_data': self.eval_table}, commit=commit)
         elif self.infer_table:
             self._wandb.log({'infer_data': self.infer_table}, commit=commit)
+
+    def finish(self):
+        self._wandb.finish()
